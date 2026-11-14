@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Word Race 3D - מרוץ מילים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Color+Emoji&family=Rubik:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <!-- Persistent Shared 3D Stage (Title turntable, Countdown, Race, Pit-stop Reading, Results orbit) -->
+    <canvas id="race-canvas"></canvas>
+
+    <!-- Speed-lines + Slow-mo + Nitro radial overlay -->
+    <div id="fx-overlay" class="fx-overlay" aria-hidden="true">
+      <div class="fx-nitro-vignette"></div>
+      <div class="fx-slowmo-vignette"></div>
+      <div class="fx-speed-lines"></div>
+    </div>
+
+    <!-- 1. Title Screen -->
+    <section id="screen-title" class="screen active">
+      <div class="title-top-bar">
+        <div class="coin-pill">
+          <span class="coin-icon">🪙</span>
+          <span id="title-coins">0</span>
+        </div>
+        <div id="title-phase-b-hooks" class="phase-b-slot">
+          <button id="btn-daily-streak" type="button" class="streak-pill" title="רצף יומי">
+            <span class="streak-flame">🔥</span>
+            <span id="title-streak-count" dir="ltr">1</span>
+            <span class="streak-label">ימים</span>
+          </button>
+          <div id="title-driver-pill" class="driver-lvl-pill">
+            <span class="lvl-star">⭐</span>
+            <span>רמה <strong id="title-driver-lvl" dir="ltr">1</strong></span>
+            <div class="lvl-mini-bar" aria-hidden="true">
+              <div id="title-driver-xp-fill" class="lvl-mini-fill"></div>
+            </div>
+          </div>
+        </div>
+        <button id="btn-settings" type="button" class="btn-icon-round glass-btn" aria-label="הגדרות">⚙️</button>
+      </div>
+
+      <div class="title-hero-overlay">
+        <div class="logo-stack">
+          <div class="logo-badge-3d">3D TURBO EDITION</div>
+          <h1 class="game-logo" dir="ltr">WORD RACE</h1>
+          <div class="logo-sub-pill">🏎️ מרוץ המילים בתלת-ממד</div>
+        </div>
+
+        <div class="title-stage-spacer"></div>
+
+        <div class="title-actions">
+          <button id="btn-play" type="button" class="btn-primary btn-play-hero">
+            <span class="play-triangle">▶</span>
+            <span>שחקו עכשיו!</span>
+          </button>
+          <div id="title-secondary-hooks" class="title-secondary-row">
+            <button id="btn-garage" type="button" class="btn-secondary btn-nav-feature">
+              <span>🔧</span>
+              <span>מוסך 2.0</span>
+            </button>
+            <button id="btn-album" type="button" class="btn-secondary btn-nav-feature">
+              <span>📒</span>
+              <span>אלבום</span>
+              <span id="title-sticker-count" class="feature-badge-count" dir="ltr">0 / 504</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. World Map Screen -->
+    <section id="screen-map" class="screen level-1">
+      <header class="top-nav">
+        <button id="btn-map-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">מפת העולמות</h2>
+        <div class="nav-right-group">
+          <div class="coin-pill">
+            <span class="coin-icon">🪙</span>
+            <span id="map-coins">0</span>
+          </div>
+        </div>
+      </header>
+
+      <div id="map-level-tabs" class="map-level-tabs" role="tablist" aria-label="בחירת רמה"></div>
+      <div id="map-level-banner" class="map-level-banner"></div>
+
+      <div class="map-scroll">
+        <div class="map-road-wrapper">
+          <svg id="map-road-svg" class="map-road-svg" viewBox="0 0 800 520" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div id="world-map-nodes" class="world-nodes-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. World Learning Path Screen (3 steps: Listen Race -> Reading Training -> Word Race) -->
+    <section id="screen-mode" class="screen">
+      <header class="top-nav">
+        <button id="btn-mode-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <div id="mode-world-badge" class="mode-world-badge"></div>
+        <div class="nav-spacer"></div>
+      </header>
+
+      <div class="mode-content">
+        <h2 class="mode-heading">מסלול הלמידה בעולם</h2>
+        <div id="mode-cards" class="step-cards-grid"></div>
+
+        <div id="mode-boss-row" class="mode-boss-row">
+          <button id="btn-toggle-boss" type="button" class="boss-toggle-btn">
+            <span class="boss-toggle-icon">👑</span>
+            <span class="boss-toggle-text">אתגר הבוס (מרוץ מילים)</span>
+            <span id="boss-toggle-state" class="boss-toggle-pill">כבוי</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3b. Step 2: Untimed Reading Training Screen (over 3D pit-stop scene) -->
+    <section id="screen-reading" class="screen">
+      <header class="top-nav">
+        <button id="btn-reading-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <div id="reading-world-badge" class="mode-world-badge"></div>
+        <div class="coin-pill">
+          <span class="coin-icon">🪙</span>
+          <span id="reading-coins">0</span>
+        </div>
+      </header>
+
+      <div class="reading-container">
+        <div class="reading-progress-row">
+          <div id="reading-dots" class="reading-dots"></div>
+          <div id="reading-counter" class="reading-counter" dir="ltr">1 / 10</div>
+        </div>
+
+        <div id="reading-card" class="reading-card">
+          <div id="reading-instruction" class="reading-instruction">קראו ובחרו את התמונה המתאימה</div>
+          <div id="reading-prompt-box" class="reading-prompt-box"></div>
+          <button id="btn-reading-speak" type="button" class="btn-speak-pill">
+            <span>🔊</span>
+            <span>השמע מילה</span>
+          </button>
+          <div id="reading-options" class="reading-options-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Race Screen HUD (Prompt pinned compactly at top under HUD, road stays clear!) -->
+    <section id="screen-race" class="screen">
+      <div class="race-top-stack">
+        <div class="race-hud">
+          <div class="hud-right">
+            <div class="coin-pill hud-pill">
+              <span class="coin-icon">🪙</span>
+              <span id="hud-coins">0</span>
+            </div>
+            <div id="hud-combo" class="combo-badge">x1</div>
+            <div id="hud-position" class="position-badge pos-1">
+              <span id="hud-pos-icon">🥇</span>
+              <span id="hud-pos-text" dir="ltr">1st / 2</span>
+            </div>
+          </div>
+
+          <div class="hud-progress-wrap">
+            <div id="hud-progress-track" class="hud-progress-track" dir="ltr">
+              <div id="hud-progress-fill" class="hud-progress-fill"></div>
+              <div id="hud-progress-rival" class="hud-progress-rival" title="יריב">🚗</div>
+              <div id="hud-progress-car" class="hud-progress-car">🏎️</div>
+              <span class="hud-finish-flag">🏁</span>
+            </div>
+          </div>
+
+          <button id="btn-pause" type="button" class="btn-pause" aria-label="הפסקה">⏸</button>
+        </div>
+
+        <div class="race-center-top">
+          <button id="prompt-card" type="button" class="prompt-card" aria-label="רמז למילה"></button>
+          <div id="hud-powerup" class="powerup-pill hidden">
+            <span id="hud-powerup-icon" class="powerup-icon">🧲</span>
+            <div class="powerup-info">
+              <span id="hud-powerup-name" class="powerup-name">מגנט</span>
+              <div class="powerup-bar-wrap">
+                <div id="hud-powerup-bar" class="powerup-bar"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic in-race announcements -->
+      <div id="race-callout" class="race-callout hidden" aria-live="polite"></div>
+      <div id="race-feedback-toast" class="race-feedback-toast hidden"></div>
+
+      <!-- Touch & Nitro Controls -->
+      <div id="touch-controls" class="touch-controls" dir="ltr">
+        <button id="btn-steer-left" type="button" class="steer-btn" aria-label="שמאלה">◀</button>
+
+        <button id="btn-nitro" type="button" class="nitro-btn" aria-label="ניטרו">
+          <div class="nitro-fill-wrap">
+            <div id="nitro-fill" class="nitro-fill"></div>
+          </div>
+          <span class="nitro-icon">⚡</span>
+          <span class="nitro-label">ניטרו</span>
+          <span id="nitro-pct" class="nitro-pct" dir="ltr">0%</span>
+        </button>
+
+        <button id="btn-steer-right" type="button" class="steer-btn" aria-label="ימינה">▶</button>
+      </div>
+    </section>
+
+    <!-- 4. Countdown Overlay -->
+    <section id="screen-countdown" class="screen overlay-screen">
+      <div class="countdown-box">
+        <div id="countdown-rival-tag" class="countdown-rival-tag"></div>
+        <div id="countdown-number" class="countdown-number" dir="ltr">3</div>
+      </div>
+    </section>
+
+    <!-- 6. Pause Overlay -->
+    <section id="screen-pause" class="screen overlay-screen">
+      <div class="modal-card">
+        <h2 class="modal-title">הפסקה</h2>
+        <div class="modal-actions">
+          <button id="btn-resume" type="button" class="btn-primary">המשך ▶</button>
+          <button id="btn-restart" type="button" class="btn-secondary">התחל מחדש ↻</button>
+          <button id="btn-pause-map" type="button" class="btn-ghost">מפת העולמות</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Results Screen -->
+    <section id="screen-results" class="screen">
+      <div class="results-card">
+        <div id="results-position-banner" class="results-position-banner pos-1">🥇 מקום ראשון!</div>
+        <h2 id="results-title" class="results-title">כל הכבוד!</h2>
+        <div id="results-stars" class="results-stars"></div>
+
+        <div class="results-stats-row">
+          <div class="stat-pill">
+            <span>🪙</span>
+            <span id="results-coins">0</span>
+          </div>
+          <div id="results-score" class="stat-pill stat-score">0 / 18</div>
+          <div id="results-combo" class="stat-pill stat-combo">🔥 שיא x1</div>
+        </div>
+
+        <div id="results-unlock" class="results-unlock hidden"></div>
+        <div id="results-phase-b-hooks" class="results-phase-b-hooks">
+          <div id="results-level-bar" class="results-level-bar"></div>
+          <div id="results-chest-box" class="results-chest-box hidden"></div>
+          <div id="results-stickers-reveal" class="results-stickers-reveal hidden"></div>
+        </div>
+
+        <div class="results-words-header">המילים מהשלב (לחצו לשמיעה):</div>
+        <div id="results-words" class="results-words-grid"></div>
+
+        <div class="results-actions">
+          <button id="btn-next-step" type="button" class="btn-primary hidden">לשלב הבא ▶</button>
+          <button id="btn-race-again" type="button" class="btn-primary">שחקו שוב 🏎️</button>
+          <button id="btn-results-map" type="button" class="btn-secondary">מפת העולמות 🗺️</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Settings Screen -->
+    <section id="screen-settings" class="screen">
+      <header class="top-nav">
+        <button id="btn-settings-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">הגדרות</h2>
+        <div class="nav-spacer"></div>
+      </header>
+
+      <div class="settings-list">
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🔊</span>
+            <span>צלילים</span>
+          </div>
+          <button id="setting-sound" type="button" class="toggle-btn is-on">מופעל</button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🎵</span>
+            <span>מוזיקה</span>
+          </div>
+          <button id="setting-music" type="button" class="toggle-btn is-on">מופעל</button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🗣️</span>
+            <span>מהירות דיבור</span>
+          </div>
+          <div class="segmented-control">
+            <button id="setting-speed-normal" type="button" class="seg-btn active">רגיל</button>
+            <button id="setting-speed-slow" type="button" class="seg-btn">איטי</button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-danger-row">
+          <div class="setting-label">
+            <span class="setting-icon">🗑️</span>
+            <span>איפוס התקדמות</span>
+          </div>
+          <button id="btn-reset-progress" type="button" class="btn-danger">איפוס</button>
+        </div>
+      </div>
+
+      <div id="reset-confirm-modal" class="confirm-backdrop hidden">
+        <div class="modal-card">
+          <h3 class="modal-title">לאפס הכל?</h3>
+          <p class="modal-desc">כל הכוכבים, המטבעות והמכוניות יתחילו מחדש.</p>
+          <div class="modal-actions">
+            <button id="btn-reset-confirm" type="button" class="btn-danger">כן, אפס</button>
+            <button id="btn-reset-cancel" type="button" class="btn-secondary">ביטול</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. Garage 2.0 Screen (3D spinning turntable + skins/boss cars + paint/wheels/spoiler/trail) -->
+    <section id="screen-garage" class="screen">
+      <header class="top-nav">
+        <button id="btn-garage-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">מוסך 2.0</h2>
+        <div class="coin-pill">
+          <span class="coin-icon">🪙</span>
+          <span id="garage-coins">0</span>
+        </div>
+      </header>
+
+      <div id="garage-stage-touch" class="garage-stage-spacer">
+        <div id="garage-car-label" class="garage-car-badge"></div>
+      </div>
+
+      <div class="garage-drawer">
+        <div id="garage-tabs" class="garage-tabs" role="tablist"></div>
+        <div id="garage-items-grid" class="garage-items-grid"></div>
+      </div>
+    </section>
+
+    <!-- 10. Sticker Album Screen (all 504 words grouped by world & level, tap to hear) -->
+    <section id="screen-album" class="screen">
+      <header class="top-nav">
+        <button id="btn-album-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">אלבום המדבקות</h2>
+        <div id="album-counter" class="album-counter-pill" dir="ltr">0 / 504</div>
+      </header>
+
+      <div id="album-level-tabs" class="map-level-tabs album-tabs" role="tablist"></div>
+      <div id="album-scroll" class="album-scroll">
+        <div id="album-groups" class="album-groups"></div>
+      </div>
+    </section>
+
+    <!-- Daily Streak Gift Modal -->
+    <div id="daily-gift-modal" class="confirm-backdrop hidden">
+      <div class="modal-card daily-modal-card">
+        <div class="daily-modal-flame">🔥</div>
+        <h3 id="daily-gift-title" class="modal-title">מתנת יום ברצף!</h3>
+        <p id="daily-gift-desc" class="modal-desc"></p>
+        <div id="daily-gift-days" class="daily-days-grid"></div>
+        <div class="modal-actions">
+          <button id="btn-claim-daily-gift" type="button" class="btn-primary">אספו מתנה! 🎁</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Driver Level-Up Celebration Modal -->
+    <div id="levelup-modal" class="confirm-backdrop hidden">
+      <div class="modal-card levelup-modal-card">
+        <div class="levelup-stars-burst">✨⭐✨</div>
+        <h3 class="modal-title">עליתם רמה!</h3>
+        <div id="levelup-badge" class="levelup-badge-circle" dir="ltr">2</div>
+        <p id="levelup-desc" class="modal-desc">אתם נהגים מדהימים! קיבלתם בונוס +50 מטבעות!</p>
+        <div class="modal-actions">
+          <button id="btn-close-levelup" type="button" class="btn-primary">אלופים! ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
