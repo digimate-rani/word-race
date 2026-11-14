@@ -1,4 +1,6 @@
-// LocalStorage persistence, car skins, world unlocks, and spaced-repetition mastery scores.
+// LocalStorage persistence, car skins, level/world unlocks, and spaced-repetition mastery scores.
+
+import { LEVELS, WORLDS, getWorldById, getWorldsByLevel } from './words.js';
 
 const STORAGE_KEY = 'word_race_progress_v1';
 
@@ -68,15 +70,90 @@ export const SKINS = [
     windowColor: '#0f172a',
     stripeColor: '#fffbeb',
     spoiler: true
+  },
+  {
+    id: 'arctic_frost',
+    nameHe: 'כפור ארקטי',
+    price: 1600,
+    bodyColor: '#38bdf8',
+    shadeColor: '#0284c7',
+    accentColor: '#e0f2fe',
+    windowColor: '#0f172a',
+    stripeColor: '#ffffff',
+    spoiler: true
+  },
+  {
+    id: 'lava_dragon',
+    nameHe: 'דרקון לבה',
+    price: 2000,
+    bodyColor: '#dc2626',
+    shadeColor: '#450a0a',
+    accentColor: '#fb923c',
+    windowColor: '#fde047',
+    stripeColor: '#f97316',
+    spoiler: true
+  },
+  {
+    id: 'emerald_viper',
+    nameHe: 'צפע ברקת',
+    price: 2500,
+    bodyColor: '#10b981',
+    shadeColor: '#064e3b',
+    accentColor: '#bef264',
+    windowColor: '#0f172a',
+    stripeColor: '#a3e635',
+    spoiler: true
+  },
+  {
+    id: 'cyber_pink',
+    nameHe: 'סייבר ורוד',
+    price: 3000,
+    bodyColor: '#ec4899',
+    shadeColor: '#831843',
+    accentColor: '#22d3ee',
+    windowColor: '#1e1b4b',
+    stripeColor: '#22d3ee',
+    spoiler: true
+  },
+  {
+    id: 'shadow_phantom',
+    nameHe: 'פנטום צללים',
+    price: 4000,
+    bodyColor: '#334155',
+    shadeColor: '#0f172a',
+    accentColor: '#facc15',
+    windowColor: '#38bdf8',
+    stripeColor: '#facc15',
+    spoiler: true
+  },
+  {
+    id: 'rainbow_legend',
+    nameHe: 'אגדת הקשת',
+    price: 5000,
+    bodyColor: '#6366f1',
+    shadeColor: '#312e81',
+    accentColor: '#fde047',
+    windowColor: '#fef08a',
+    stripeColor: '#f43f5e',
+    rainbow: true,
+    spoiler: true
   }
 ];
+
+function createDefaultWorldStars() {
+  const map = {};
+  for (const w of WORLDS) {
+    map[w.id] = 0;
+  }
+  return map;
+}
 
 function createDefaultData() {
   return {
     coins: 0,
     unlockedSkins: ['red_racer'],
     selectedSkin: 'red_racer',
-    worldStars: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+    worldStars: createDefaultWorldStars(),
     wordScores: {},
     lastMissed: {},
     lastMode: 'picture',
@@ -169,9 +246,52 @@ export class ProgressStore {
     return this.data.worldStars[worldId] || 0;
   }
 
+  isLevelUnlocked(levelId) {
+    const lvl = Number(levelId);
+    if (lvl <= 1) return true;
+    const prevWorlds = getWorldsByLevel(lvl - 1);
+    if (!prevWorlds.length) return false;
+    return prevWorlds.every((w) => this.getStars(w.id) >= 1);
+  }
+
+  getLevelProgress(levelId) {
+    const worlds = getWorldsByLevel(levelId);
+    let earned = 0;
+    let completedWorlds = 0;
+    for (const w of worlds) {
+      const s = this.getStars(w.id);
+      earned += s;
+      if (s >= 1) completedWorlds++;
+    }
+    return {
+      earned,
+      possible: worlds.length * 3,
+      completedWorlds,
+      totalWorlds: worlds.length
+    };
+  }
+
+  getHighestUnlockedLevel() {
+    let highest = 1;
+    for (const lvl of LEVELS) {
+      if (this.isLevelUnlocked(lvl.id)) {
+        highest = lvl.id;
+      }
+    }
+    return highest;
+  }
+
   isWorldUnlocked(worldId) {
     const id = Number(worldId);
     if (id <= 1) return true;
+    const world = getWorldById(id);
+    if (!world || world.id !== id) return false;
+    if (!this.isLevelUnlocked(world.level)) return false;
+
+    const levelWorlds = getWorldsByLevel(world.level);
+    if (levelWorlds.length && levelWorlds[0].id === id) {
+      return true;
+    }
     return this.getStars(id - 1) >= 2;
   }
 

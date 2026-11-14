@@ -1,6 +1,6 @@
 // Application entry point, screen router, game loop, input bindings, and window.__game test hooks.
 
-import { getWorldById } from './words.js';
+import { WORLDS, getWorldById } from './words.js';
 import { ProgressStore } from './progress.js';
 import { AudioEngine } from './audio.js';
 import { RaceEngine } from './race.js';
@@ -185,7 +185,9 @@ function startRaceLoop() {
 }
 
 function initRaceState(worldId, mode, silent = false) {
-  currentWorldId = Number(worldId) || 1;
+  const world = getWorldById(worldId);
+  currentWorldId = world.id;
+  ui.selectedLevel = world.level;
   currentMode = mode || progress.lastMode || 'picture';
   runWordResults = [];
   resultsFinalized = false;
@@ -260,8 +262,9 @@ function finalizeAndShowResults(silent = false) {
   if (ratio >= 0.9) stars = 3;
   else if (ratio >= 0.7) stars = 2;
 
-  const nextWorldId = currentWorldId + 1;
-  const wasNextUnlocked = nextWorldId <= 6 ? progress.isWorldUnlocked(nextWorldId) : true;
+  const prevUnlocked = new Set(
+    WORLDS.filter((w) => progress.isWorldUnlocked(w.id)).map((w) => w.id)
+  );
 
   const missedIds = runWordResults.filter((r) => !r.correct).map((r) => r.word.id);
   progress.recordRunResult({
@@ -270,8 +273,8 @@ function finalizeAndShowResults(silent = false) {
     missedIds
   });
 
-  const isNextUnlockedNow = nextWorldId <= 6 ? progress.isWorldUnlocked(nextWorldId) : true;
-  const newlyUnlockedWorld = !wasNextUnlocked && isNextUnlockedNow ? getWorldById(nextWorldId) : null;
+  const newlyUnlockedWorld =
+    WORLDS.find((w) => !prevUnlocked.has(w.id) && progress.isWorldUnlocked(w.id)) || null;
 
   // Ensure every gate word is represented on Results even if finish() was called early
   const seenIds = new Set(runWordResults.map((r) => r.word.id));

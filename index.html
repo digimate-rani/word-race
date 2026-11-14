@@ -55,7 +55,7 @@
     </section>
 
     <!-- 2. World Map Screen -->
-    <section id="screen-map" class="screen">
+    <section id="screen-map" class="screen level-1">
       <header class="top-nav">
         <button id="btn-map-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
         <h2 class="screen-heading">מפת העולמות</h2>
@@ -68,16 +68,12 @@
         </div>
       </header>
 
+      <div id="map-level-tabs" class="map-level-tabs" role="tablist" aria-label="בחירת רמה"></div>
+      <div id="map-level-banner" class="map-level-banner"></div>
+
       <div class="map-scroll">
         <div class="map-road-wrapper">
-          <svg class="map-road-svg" viewBox="0 0 800 520" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
-                  fill="none" stroke="rgba(15,23,42,0.22)" stroke-width="56" stroke-linecap="round" />
-            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
-                  fill="none" stroke="#475569" stroke-width="44" stroke-linecap="round" />
-            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
-                  fill="none" stroke="#fef08a" stroke-width="6" stroke-dasharray="18 18" stroke-linecap="round" />
-          </svg>
+          <svg id="map-road-svg" class="map-road-svg" viewBox="0 0 800 520" preserveAspectRatio="none" aria-hidden="true"></svg>
           <div id="world-map-nodes" class="world-nodes-grid"></div>
         </div>
       </div>

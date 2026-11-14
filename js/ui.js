@@ -1,6 +1,6 @@
 // DOM rendering and UI interaction controller for all 9 game screens.
 
-import { WORLDS } from './words.js';
+import { LEVELS, WORLDS, getLevelById, getWorldById, getWorldsByLevel } from './words.js';
 import { SKINS } from './progress.js';
 import { drawCartoonCar } from './race.js';
 
@@ -11,6 +11,7 @@ export class UIController {
     this.handlers = handlers;
 
     this.currentScreen = 'title';
+    this.selectedLevel = progress.getHighestUnlockedLevel();
     this.selectedWorldId = 1;
     this.previewSkinId = progress.getSelectedSkin().id;
     this.previewTime = 0;
@@ -38,6 +39,9 @@ export class UIController {
     this.titleCanvas = document.getElementById('title-car-canvas');
     this.garageCanvas = document.getElementById('garage-car-canvas');
 
+    this.mapLevelTabsEl = document.getElementById('map-level-tabs');
+    this.mapLevelBannerEl = document.getElementById('map-level-banner');
+    this.mapRoadSvgEl = document.getElementById('map-road-svg');
     this.mapNodesEl = document.getElementById('world-map-nodes');
     this.mapCoinsEl = document.getElementById('map-coins');
     this.titleCoinsEl = document.getElementById('title-coins');
@@ -209,6 +213,8 @@ export class UIController {
     document.getElementById('btn-reset-confirm').addEventListener('click', () => {
       clickSfx();
       this.progress.reset();
+      this.selectedLevel = 1;
+      this.selectedWorldId = 1;
       this.previewSkinId = this.progress.getSelectedSkin().id;
       this.audio.syncSettings(this.progress.settings);
       this.confirmResetOpen = false;
@@ -327,9 +333,89 @@ export class UIController {
 
   renderWorldMap() {
     this.mapCoinsEl.textContent = String(this.progress.coins);
-    this.mapNodesEl.innerHTML = '';
 
-    WORLDS.forEach((world, idx) => {
+    const activeLevel = getLevelById(this.selectedLevel);
+    this.selectedLevel = activeLevel.id;
+
+    // Update map screen theme class per selected level
+    this.screens.map.classList.remove('level-1', 'level-2', 'level-3');
+    this.screens.map.classList.add(`level-${activeLevel.id}`);
+
+    // Render 3 level tabs with per-level progress
+    this.mapLevelTabsEl.innerHTML = '';
+    LEVELS.forEach((lvl) => {
+      const unlocked = this.progress.isLevelUnlocked(lvl.id);
+      const prog = this.progress.getLevelProgress(lvl.id);
+      const isActive = lvl.id === activeLevel.id;
+
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.role = 'tab';
+      tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      tab.dataset.level = String(lvl.id);
+      tab.className = `level-tab ${isActive ? 'active' : ''} ${unlocked ? 'unlocked' : 'locked'}`;
+      tab.style.setProperty('--lvl-color', lvl.color);
+      tab.style.setProperty('--lvl-dark', lvl.darkColor);
+
+      tab.innerHTML = `
+        <div class="level-tab-main">
+          <span class="level-tab-icon">${unlocked ? lvl.icon : '🔒'}</span>
+          <div class="level-tab-text">
+            <span class="level-tab-num">רמה ${lvl.id}</span>
+            <span class="level-tab-name">${lvl.nameHe}</span>
+          </div>
+        </div>
+        <span class="level-tab-progress" dir="ltr">★ ${prog.earned}/${prog.possible}</span>
+      `;
+
+      tab.addEventListener('click', () => {
+        this.audio.unlock();
+        this.audio.playSfx('click');
+        this.selectedLevel = lvl.id;
+        this.renderWorldMap();
+      });
+
+      this.mapLevelTabsEl.appendChild(tab);
+    });
+
+    // Render level progress / unlock banner
+    const levelUnlocked = this.progress.isLevelUnlocked(activeLevel.id);
+    const activeProg = this.progress.getLevelProgress(activeLevel.id);
+    this.mapLevelBannerEl.style.setProperty('--lvl-color', activeLevel.color);
+    if (!levelUnlocked) {
+      this.mapLevelBannerEl.classList.add('is-locked');
+      this.mapLevelBannerEl.innerHTML = `
+        <span class="banner-text">🔒 רמה ${activeLevel.id} נעולה - השיגו לפחות כוכב אחד בכל עולמות רמה ${activeLevel.id - 1} כדי לפתוח</span>
+      `;
+    } else {
+      const pct = activeProg.possible > 0 ? Math.round((activeProg.earned / activeProg.possible) * 100) : 0;
+      this.mapLevelBannerEl.classList.remove('is-locked');
+      this.mapLevelBannerEl.innerHTML = `
+        <span class="banner-text">${activeLevel.icon} רמה ${activeLevel.id} - ${activeLevel.nameHe}: ${activeProg.earned} / ${activeProg.possible} כוכבים</span>
+        <div class="banner-bar-wrap" aria-hidden="true">
+          <div class="banner-bar-fill" style="width: ${pct}%"></div>
+        </div>
+      `;
+    }
+
+    // Render decorative winding road SVG
+    const levelWorlds = getWorldsByLevel(activeLevel.id);
+    if (this.mapRoadSvgEl) {
+      const roadPath = levelWorlds.length > 6
+        ? 'M 690 115 L 110 115 C 30 115, 30 390, 110 390 L 690 390'
+        : 'M 670 115 L 130 115 C 40 115, 40 390, 130 390 L 670 390';
+      this.mapRoadSvgEl.innerHTML = `
+        <path d="${roadPath}" fill="none" stroke="rgba(15,23,42,0.2)" stroke-width="52" stroke-linecap="round" />
+        <path d="${roadPath}" fill="none" stroke="#475569" stroke-width="40" stroke-linecap="round" />
+        <path d="${roadPath}" fill="none" stroke="#fef08a" stroke-width="6" stroke-dasharray="18 18" stroke-linecap="round" />
+      `;
+    }
+
+    // Render world nodes for the active level
+    this.mapNodesEl.innerHTML = '';
+    this.mapNodesEl.classList.toggle('cols-4', levelWorlds.length > 6);
+
+    levelWorlds.forEach((world, idx) => {
       const unlocked = this.progress.isWorldUnlocked(world.id);
       const stars = this.progress.getStars(world.id);
 
@@ -348,12 +434,14 @@ export class UIController {
         .map((n) => `<span class="star ${n <= stars ? 'filled' : ''}">★</span>`)
         .join('');
 
+      const lockHint = !levelUnlocked ? 'רמה נעולה' : 'נדרשים 2 כוכבים';
+
       btn.innerHTML = `
         <div class="world-num">${world.id}</div>
         <div class="world-emoji">${unlocked ? world.icon : '🔒'}</div>
         <div class="world-info">
           <div class="world-name-he">${world.nameHe}</div>
-          <div class="world-stars">${unlocked ? starsHtml : '<span class="lock-hint">נדרשים 2 כוכבים</span>'}</div>
+          <div class="world-stars">${unlocked ? starsHtml : `<span class="lock-hint">${lockHint}</span>`}</div>
         </div>
       `;
 
@@ -368,6 +456,7 @@ export class UIController {
         }
         this.audio.playSfx('click');
         this.selectedWorldId = world.id;
+        this.selectedLevel = world.level;
         this.renderModePicker(world.id);
         this.handlers.onSelectWorld(world.id);
       });
@@ -377,7 +466,7 @@ export class UIController {
   }
 
   renderModePicker(worldId) {
-    const world = WORLDS.find((w) => w.id === Number(worldId)) || WORLDS[0];
+    const world = getWorldById(worldId);
     const stars = this.progress.getStars(world.id);
     const starsHtml = [1, 2, 3]
       .map((n) => `<span class="star ${n <= stars ? 'filled' : ''}">★</span>`)
@@ -517,7 +606,11 @@ export class UIController {
     }
 
     if (newlyUnlockedWorld) {
-      this.resUnlockEl.textContent = `נפתח עולם חדש: ${newlyUnlockedWorld.nameHe} ${newlyUnlockedWorld.icon}`;
+      const lvlWorlds = getWorldsByLevel(newlyUnlockedWorld.level);
+      const isNewLevel = lvlWorlds.length && lvlWorlds[0].id === newlyUnlockedWorld.id && newlyUnlockedWorld.level > 1;
+      this.resUnlockEl.textContent = isNewLevel
+        ? `נפתחה רמה ${newlyUnlockedWorld.level}! עולם חדש: ${newlyUnlockedWorld.nameHe} ${newlyUnlockedWorld.icon}`
+        : `נפתח עולם חדש: ${newlyUnlockedWorld.nameHe} ${newlyUnlockedWorld.icon}`;
       this.resUnlockEl.classList.remove('hidden');
     } else {
       this.resUnlockEl.classList.add('hidden');
@@ -528,8 +621,9 @@ export class UIController {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = `result-word-chip ${item.correct ? 'ok' : 'missed'}`;
+      const emojiHtml = item.word.emoji ? `<span class="rw-emoji">${item.word.emoji}</span>` : '';
       btn.innerHTML = `
-        <span class="rw-emoji">${item.word.emoji}</span>
+        ${emojiHtml}
         <span class="rw-en" dir="ltr">${item.word.en}</span>
         <span class="rw-audio">🔊</span>
         ${item.correct ? '' : '<span class="rw-practice">לתרגול</span>'}
@@ -567,8 +661,12 @@ export class UIController {
         statusText = `<span class="skin-badge price ${canAfford ? 'affordable' : 'expensive'}">🪙 ${skin.price}</span>`;
       }
 
+      const swatchBg = skin.rainbow
+        ? 'linear-gradient(135deg, #f43f5e 0%, #facc15 28%, #22c55e 55%, #38bdf8 80%, #a855f7 100%)'
+        : `linear-gradient(135deg, ${skin.bodyColor} 60%, ${skin.accentColor} 100%)`;
+
       card.innerHTML = `
-        <div class="skin-swatch" style="background: linear-gradient(135deg, ${skin.bodyColor} 60%, ${skin.accentColor} 100%)">
+        <div class="skin-swatch" style="background: ${swatchBg}">
           <span class="skin-car-emoji">🏎️</span>
         </div>
         <div class="skin-name">${skin.nameHe}</div>

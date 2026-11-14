@@ -126,7 +126,17 @@ export function drawCartoonCar(ctx, x, y, scale, skin, options = {}) {
   ctx.stroke();
 
   // Racing stripe
-  ctx.fillStyle = skin.stripeColor;
+  if (skin.rainbow) {
+    const grad = ctx.createLinearGradient(-10, -30, 10, 12);
+    grad.addColorStop(0, '#f43f5e');
+    grad.addColorStop(0.25, '#facc15');
+    grad.addColorStop(0.5, '#22c55e');
+    grad.addColorStop(0.75, '#38bdf8');
+    grad.addColorStop(1, '#a855f7');
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = skin.stripeColor;
+  }
   ctx.fillRect(-10, -30, 20, 42);
 
   // Cabin roof
@@ -136,7 +146,16 @@ export function drawCartoonCar(ctx, x, y, scale, skin, options = {}) {
   ctx.stroke();
 
   // Cabin stripe
-  ctx.fillStyle = skin.stripeColor;
+  if (skin.rainbow) {
+    const grad = ctx.createLinearGradient(-8, -54, 8, -28);
+    grad.addColorStop(0, '#f43f5e');
+    grad.addColorStop(0.35, '#facc15');
+    grad.addColorStop(0.68, '#22c55e');
+    grad.addColorStop(1, '#38bdf8');
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = skin.stripeColor;
+  }
   ctx.fillRect(-8, -54, 16, 26);
 
   // Rear windshield
@@ -322,7 +341,7 @@ export class RaceEngine {
 
   _buildTrack(wordScores, lastMissed) {
     const worldWords = getWordsByWorld(this.world.id);
-    const chosenTargets = pickRunWords(this.world.id, wordScores, lastMissed, this.rng, GATE_COUNT);
+    const chosenTargets = pickRunWords(this.world.id, wordScores, lastMissed, this.rng, GATE_COUNT, this.mode);
 
     this.gates = [];
     this.obstacles = [];
@@ -816,6 +835,33 @@ export class RaceEngine {
   }
 
   _drawSkyDecor(ctx, w, horizonY, theme) {
+    if (theme.skyStars) {
+      // Starry cosmos sky with glowing ringed planet
+      ctx.save();
+      for (let i = 0; i < 28; i++) {
+        const sx = ((i * 173 + 41) % 997) / 997 * w;
+        const sy = ((i * 97 + 19) % 499) / 499 * (horizonY * 0.85);
+        const twinkle = 0.45 + 0.55 * Math.abs(Math.sin(this.time * 2.2 + i));
+        ctx.fillStyle = `rgba(255, 255, 255, ${twinkle.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, (i % 3 === 0 ? 2.4 : 1.5), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      const px = w * 0.8;
+      const py = horizonY * 0.34;
+      ctx.fillStyle = theme.sunColor;
+      ctx.beginPath();
+      ctx.arc(px, py, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(253, 224, 71, 0.75)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(px, py, 40, 10, -0.25, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
     // Sun
     const sunX = w * 0.82;
     const sunY = horizonY * 0.36;
@@ -1052,6 +1098,375 @@ export class RaceEngine {
         ctx.closePath();
         ctx.fill();
       }
+    } else if (type === 'sea') {
+      // Coral reefs & tall seaweed
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#fb7185';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        roundRectPath(ctx, -8, -76, 16, 76, 8);
+        ctx.fill();
+        ctx.stroke();
+        roundRectPath(ctx, -26, -54, 14, 34, 7);
+        ctx.fill();
+        ctx.stroke();
+        roundRectPath(ctx, 12, -62, 14, 42, 7);
+        ctx.fill();
+        ctx.stroke();
+      } else if (prop.variant === 1) {
+        ctx.fillStyle = '#10b981';
+        for (const ox of [-10, 0, 10]) {
+          ctx.beginPath();
+          ctx.ellipse(ox, -42, 7, 42, ox * 0.02, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = '#fde047';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(0, -18, 22, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (type === 'garden') {
+      // Giant garden flowers & spotted mushrooms
+      if (prop.variant % 2 === 0) {
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(-4, -68, 8, 68);
+        ctx.fillStyle = prop.variant === 0 ? '#ec4899' : '#a855f7';
+        for (let a = 0; a < 5; a++) {
+          const ang = (Math.PI * 2 * a) / 5;
+          ctx.beginPath();
+          ctx.arc(Math.cos(ang) * 14, -74 + Math.sin(ang) * 14, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(0, -74, 9, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(-10, -36, 20, 36);
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(0, -36, 28, Math.PI, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-10, -48, 5, 0, Math.PI * 2);
+        ctx.arc(9, -50, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'mountain') {
+      // Snow-capped alpine pines & snowy rocks
+      if (prop.variant !== 2) {
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-7, -24, 14, 24);
+        ctx.fillStyle = '#0f766e';
+        ctx.beginPath();
+        ctx.moveTo(-34, -22);
+        ctx.lineTo(0, -96);
+        ctx.lineTo(34, -22);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(-14, -66);
+        ctx.lineTo(0, -96);
+        ctx.lineTo(14, -66);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#64748b';
+        ctx.beginPath();
+        ctx.moveTo(-32, 0);
+        ctx.lineTo(-10, -48);
+        ctx.lineTo(24, -36);
+        ctx.lineTo(34, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(-18, -32);
+        ctx.lineTo(-10, -48);
+        ctx.lineTo(2, -42);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (type === 'mall') {
+      // Boutiques with colorful awnings & street lamps
+      const awnings = ['#ec4899', '#06b6d4', '#eab308'];
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      roundRectPath(ctx, -34, -108, 68, 108, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = awnings[prop.variant % 3];
+      roundRectPath(ctx, -38, -68, 76, 18, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#bae6fd';
+      ctx.fillRect(-22, -44, 44, 34);
+    } else if (type === 'station') {
+      // Railway signals & station signposts
+      ctx.fillStyle = '#334155';
+      ctx.fillRect(-5, -96, 10, 96);
+      ctx.fillStyle = '#0f172a';
+      roundRectPath(ctx, -16, -112, 32, 46, 8);
+      ctx.fill();
+      ctx.fillStyle = prop.variant === 0 ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, -98, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(0, -78, 7, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'stadium') {
+      // Stadium floodlight towers & team pennants
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(-5, -116, 10, 116);
+        ctx.fillStyle = '#1e293b';
+        roundRectPath(ctx, -26, -134, 52, 22, 5);
+        ctx.fill();
+        ctx.fillStyle = '#fef9c3';
+        for (const lx of [-16, 0, 16]) {
+          ctx.beginPath();
+          ctx.arc(lx, -123, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(-4, -84, 8, 84);
+        ctx.fillStyle = prop.variant === 1 ? '#2563eb' : '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(4, -84);
+        ctx.lineTo(38, -72);
+        ctx.lineTo(4, -60);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (type === 'jobs') {
+      // Town service buildings (clinic, bakery, firehouse)
+      const colors = ['#fee2e2', '#fef3c7', '#e0f2fe'];
+      const roofs = ['#ef4444', '#f59e0b', '#0284c7'];
+      ctx.fillStyle = colors[prop.variant % 3];
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      roundRectPath(ctx, -34, -92, 68, 92, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = roofs[prop.variant % 3];
+      roundRectPath(ctx, -38, -104, 76, 18, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-14, -74, 28, 22);
+      ctx.fillStyle = roofs[prop.variant % 3];
+      ctx.fillRect(-3, -71, 6, 16);
+      ctx.fillRect(-8, -66, 16, 6);
+    } else if (type === 'kitchen') {
+      // Giant chef hats & colorful kitchen mugs/jars
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.fillRect(-20, -48, 40, 48);
+        ctx.strokeRect(-20, -48, 40, 48);
+        ctx.beginPath();
+        ctx.arc(-14, -56, 16, 0, Math.PI * 2);
+        ctx.arc(14, -56, 16, 0, Math.PI * 2);
+        ctx.arc(0, -68, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = prop.variant === 1 ? '#f97316' : '#ec4899';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, -22, -62, 44, 62, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(-16, -42, 32, 16);
+      }
+    } else if (type === 'feelings') {
+      // Enchanted colorful trees & glowing lanterns
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(-7, -56, 14, 56);
+      const foliage = ['#f472b6', '#fbbf24', '#34d399'];
+      ctx.fillStyle = foliage[prop.variant % 3];
+      ctx.beginPath();
+      ctx.arc(0, -76, 30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+      ctx.beginPath();
+      ctx.arc(-9, -84, 10, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'opposites') {
+      // Contrasting black-and-white checkered pillars
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = (i + prop.variant) % 2 === 0 ? '#ffffff' : '#0f172a';
+        ctx.fillRect(-14, -24 * (i + 1), 28, 24);
+        ctx.strokeRect(-14, -24 * (i + 1), 28, 24);
+      }
+      ctx.fillStyle = prop.variant % 2 === 0 ? '#f43f5e' : '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(0, -108, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    } else if (type === 'space') {
+      // Neon space beacons & glowing crystal spires
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(-6, -86, 12, 86);
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath();
+        ctx.arc(0, -94, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-4, -98, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = prop.variant === 1 ? '#a855f7' : '#38bdf8';
+        ctx.beginPath();
+        ctx.moveTo(-22, 0);
+        ctx.lineTo(-6, -82);
+        ctx.lineTo(14, -68);
+        ctx.lineTo(24, 0);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (type === 'music') {
+      // Glowing stage speakers & giant music note poles
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#1e1b4b';
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, -24, -84, 48, 84, 8);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(0, -56, 14, 0, Math.PI * 2);
+        ctx.arc(0, -24, 16, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(6, -96, 8, 76);
+        ctx.fillRect(6, -96, 26, 10);
+        ctx.beginPath();
+        ctx.ellipse(-2, -18, 14, 10, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'school') {
+      // Giant colorful pencils & school lockers
+      if (prop.variant !== 2) {
+        ctx.fillStyle = prop.variant === 0 ? '#facc15' : '#38bdf8';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.fillRect(-10, -76, 20, 76);
+        ctx.strokeRect(-10, -76, 20, 76);
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.moveTo(-10, -76);
+        ctx.lineTo(0, -100);
+        ctx.lineTo(10, -76);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.moveTo(-3, -93);
+        ctx.lineTo(0, -100);
+        ctx.lineTo(3, -93);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.fillStyle = '#ef4444';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        roundRectPath(ctx, -28, -94, 56, 94, 6);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-16, -78, 32, 16);
+      }
+    } else if (type === 'town') {
+      // Clocktowers & city street lamps
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#f1f5f9';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.fillRect(-20, -110, 40, 110);
+        ctx.strokeRect(-20, -110, 40, 110);
+        ctx.fillStyle = '#0d9488';
+        ctx.beginPath();
+        ctx.moveTo(-24, -110);
+        ctx.lineTo(0, -138);
+        ctx.lineTo(24, -110);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -84, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(-4, -84, 8, 84);
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(0, -90, 12, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (type === 'airport2') {
+      // Sunset runway radar towers & red-white approach beacons
+      if (prop.variant === 0) {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.fillRect(-10, -96, 20, 96);
+        ctx.strokeRect(-10, -96, 20, 96);
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(0, -108, 18, Math.PI * 0.8, Math.PI * 2.2);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-8, -60, 16, 20);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(-8, -40, 16, 20);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-8, -20, 16, 20);
+      }
+    } else if (type === 'tunnel') {
+      // Glowing time-portal pillars & floating hourglass crystals
+      ctx.fillStyle = '#1e1b4b';
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 3;
+      roundRectPath(ctx, -14, -106, 28, 106, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = prop.variant % 2 === 0 ? '#fde047' : '#f472b6';
+      ctx.beginPath();
+      ctx.moveTo(-12, -92);
+      ctx.lineTo(12, -92);
+      ctx.lineTo(0, -76);
+      ctx.lineTo(12, -60);
+      ctx.lineTo(-12, -60);
+      ctx.lineTo(0, -76);
+      ctx.closePath();
+      ctx.fill();
     }
 
     ctx.restore();
@@ -1329,7 +1744,10 @@ export class RaceEngine {
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`${this.feedbackBanner.emoji}  ${this.feedbackBanner.word}`, bx, by + 1);
+    const label = this.feedbackBanner.emoji
+      ? `${this.feedbackBanner.emoji}  ${this.feedbackBanner.word}`
+      : this.feedbackBanner.word;
+    ctx.fillText(label, bx, by + 1);
     ctx.restore();
   }
 

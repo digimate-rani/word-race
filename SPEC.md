@@ -110,6 +110,29 @@ unambiguous words that have a clear emoji:
    cook, drive, fly, climb, cry, laugh, play, walk, drink, ride, paint
 Each world has its own roadside theme (props, sky color, road color) so the map feels like a journey.
 
+### 6b. v2: three levels, ~500 words (added 2026-11-14)
+The game grows to three levels. Shape gains `level` (1-3); `emoji` may be `null` for a word with no
+clear emoji (such a word is skipped in Picture mode, used in Listen and Hebrew modes).
+- **Level 1 - Beginner**: the 6 worlds above (120 words), unchanged.
+- **Level 2 - Intermediate**: 8 new worlds x 24 words (~190). Suggested themes: Sea World (sea
+  animals), Bug Garden (insects, plants), Weather Mountain (weather, seasons, nature), Clothes Mall,
+  Transport Station, Sports Stadium, Jobs Town (people and jobs), Kitchen Corner (kitchen, more foods).
+- **Level 3 - Advanced**: 8 new worlds x 24 words (~190). Suggested themes: Feelings Forest
+  (emotions and adjectives: happy, angry, tired, brave...), Opposites Park (big/small, hot/cold, fast/slow,
+  full/empty...), Space Station, Music Hall (instruments and music words), School Lane (school
+  objects and subjects), Town Map (places in town: bank, hospital, library...), Action Airport 2
+  (more verbs: build, catch, throw, push, pull...), Time Tunnel (days, months, time words, ordinals).
+- Words across the whole game are unique (no word in two worlds; "orange" lives in Color Canyon
+  only, Food City uses another word instead). Words get harder through the levels: longer, less
+  common, adjectives and verbs, but still something a child 8-11 meets in school English.
+- Hebrew `he`: the natural word an Israeli child uses, with no nikud.
+- Distractors stay inside the world and must not be synonyms or near-opposites that confuse in
+  Picture mode (e.g. Feelings: never "sad" and "unhappy" in one row).
+- **Map**: three level tabs (or three map sections) on the world map, each with its own color and
+  icon. A level opens when every world of the level before has 1+ star; inside a level the
+  2-stars-to-unlock-next rule stays. Show progress per level (stars earned / possible).
+- Garage: add 6 more car skins (prices 1600, 2000, 2500, 3000, 4000, 5000) so coins stay meaningful.
+
 ## 7. Audio (`js/audio.js`)
 One module, three layers:
 - **Speech**: `speak(text)` plays `audio/words/<file>` if `audio/manifest.json` has an entry for the
