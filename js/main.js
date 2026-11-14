@@ -111,7 +111,7 @@ const race = new RaceEngine(raceCanvas, {
       } else {
         audio.playSfx('wrong');
       }
-      audio.speak(gate.target.en);
+      // No speech on gate pass (Rani 2026-11-14): it overlapped the next word and made a "word salad".
     }
     ui.updateRaceHud({
       coins: race.coins,
