@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Word Race - מרוץ מילים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Color+Emoji&family=Rubik:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 1. Title Screen -->
+    <section id="screen-title" class="screen active">
+      <div class="title-sky-decor">
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        <div class="cloud cloud-3"></div>
+      </div>
+
+      <div class="title-top-bar">
+        <div class="coin-pill">
+          <span class="coin-icon">🪙</span>
+          <span id="title-coins">0</span>
+        </div>
+      </div>
+
+      <div class="title-center">
+        <div class="logo-stack">
+          <h1 class="game-logo" dir="ltr">WORD RACE</h1>
+          <div class="logo-sub-pill">🏎️ מרוץ מילים</div>
+        </div>
+
+        <div class="title-car-stage">
+          <canvas id="title-car-canvas" width="340" height="190"></canvas>
+        </div>
+
+        <button id="btn-play" type="button" class="btn-primary btn-play-hero">
+          <span class="play-triangle">▶</span>
+          <span>שחק!</span>
+        </button>
+
+        <div class="title-secondary-row">
+          <button id="btn-garage" type="button" class="btn-secondary">
+            <span>🔧</span>
+            <span>מוסך</span>
+          </button>
+          <button id="btn-settings" type="button" class="btn-secondary">
+            <span>⚙️</span>
+            <span>הגדרות</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. World Map Screen -->
+    <section id="screen-map" class="screen">
+      <header class="top-nav">
+        <button id="btn-map-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">מפת העולמות</h2>
+        <div class="nav-right-group">
+          <button id="btn-map-garage" type="button" class="btn-pill-small" aria-label="מוסך">🔧 מוסך</button>
+          <div class="coin-pill">
+            <span class="coin-icon">🪙</span>
+            <span id="map-coins">0</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="map-scroll">
+        <div class="map-road-wrapper">
+          <svg class="map-road-svg" viewBox="0 0 800 520" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
+                  fill="none" stroke="rgba(15,23,42,0.22)" stroke-width="56" stroke-linecap="round" />
+            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
+                  fill="none" stroke="#475569" stroke-width="44" stroke-linecap="round" />
+            <path d="M 110 110 C 260 60, 420 170, 640 120 C 760 95, 740 270, 580 300 C 400 330, 260 260, 140 340 C 60 395, 190 470, 650 430"
+                  fill="none" stroke="#fef08a" stroke-width="6" stroke-dasharray="18 18" stroke-linecap="round" />
+          </svg>
+          <div id="world-map-nodes" class="world-nodes-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Mode Picker Screen -->
+    <section id="screen-mode" class="screen">
+      <header class="top-nav">
+        <button id="btn-mode-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <div id="mode-world-badge" class="mode-world-badge"></div>
+        <div class="nav-spacer"></div>
+      </header>
+
+      <div class="mode-content">
+        <h2 class="mode-heading">איך נוסעים היום?</h2>
+        <div id="mode-cards" class="mode-cards-grid"></div>
+      </div>
+    </section>
+
+    <!-- 5. Race Screen (Canvas + HUD) -->
+    <section id="screen-race" class="screen">
+      <canvas id="race-canvas"></canvas>
+
+      <div class="race-hud">
+        <div class="hud-right">
+          <div class="coin-pill hud-pill">
+            <span class="coin-icon">🪙</span>
+            <span id="hud-coins">0</span>
+          </div>
+          <div id="hud-combo" class="combo-badge">x1</div>
+        </div>
+
+        <div class="hud-progress-wrap">
+          <div id="hud-progress-track" class="hud-progress-track" dir="ltr">
+            <div id="hud-progress-fill" class="hud-progress-fill"></div>
+            <div id="hud-progress-car" class="hud-progress-car">🏎️</div>
+            <span class="hud-finish-flag">🏁</span>
+          </div>
+        </div>
+
+        <button id="btn-pause" type="button" class="btn-pause" aria-label="הפסקה">⏸</button>
+      </div>
+
+      <button id="prompt-card" type="button" class="prompt-card" aria-label="רמז למילה"></button>
+
+      <div id="touch-controls" class="touch-controls" dir="ltr">
+        <button id="btn-steer-left" type="button" class="steer-btn" aria-label="שמאלה">◀</button>
+        <button id="btn-steer-right" type="button" class="steer-btn" aria-label="ימינה">▶</button>
+      </div>
+    </section>
+
+    <!-- 4. Countdown Overlay -->
+    <section id="screen-countdown" class="screen overlay-screen">
+      <div class="countdown-box">
+        <div id="countdown-number" class="countdown-number" dir="ltr">3</div>
+      </div>
+    </section>
+
+    <!-- 6. Pause Overlay -->
+    <section id="screen-pause" class="screen overlay-screen">
+      <div class="modal-card">
+        <h2 class="modal-title">הפסקה</h2>
+        <div class="modal-actions">
+          <button id="btn-resume" type="button" class="btn-primary">המשך ▶</button>
+          <button id="btn-restart" type="button" class="btn-secondary">התחל מחדש ↻</button>
+          <button id="btn-pause-map" type="button" class="btn-ghost">מפת העולמות</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Results Screen -->
+    <section id="screen-results" class="screen">
+      <div class="results-card">
+        <h2 id="results-title" class="results-title">כל הכבוד!</h2>
+        <div id="results-stars" class="results-stars"></div>
+
+        <div class="results-stats-row">
+          <div class="stat-pill">
+            <span>🪙</span>
+            <span id="results-coins">0</span>
+          </div>
+          <div id="results-score" class="stat-pill stat-score">0 / 18</div>
+        </div>
+
+        <div id="results-unlock" class="results-unlock hidden"></div>
+
+        <div class="results-words-header">המילים מהמרוץ (לחצו לשמיעה):</div>
+        <div id="results-words" class="results-words-grid"></div>
+
+        <div class="results-actions">
+          <button id="btn-race-again" type="button" class="btn-primary">מרוץ נוסף 🏎️</button>
+          <button id="btn-results-map" type="button" class="btn-secondary">מפת העולמות 🗺️</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. Garage Screen -->
+    <section id="screen-garage" class="screen">
+      <header class="top-nav">
+        <button id="btn-garage-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">מוסך המכוניות</h2>
+        <div class="coin-pill">
+          <span class="coin-icon">🪙</span>
+          <span id="garage-coins">0</span>
+        </div>
+      </header>
+
+      <div class="garage-layout">
+        <div class="garage-stage">
+          <canvas id="garage-car-canvas" width="320" height="200"></canvas>
+          <div id="garage-skin-name" class="garage-skin-name">ברק אדום</div>
+        </div>
+        <div id="garage-grid" class="garage-grid"></div>
+      </div>
+    </section>
+
+    <!-- 9. Settings Screen -->
+    <section id="screen-settings" class="screen">
+      <header class="top-nav">
+        <button id="btn-settings-back" type="button" class="btn-icon-round" aria-label="חזרה">➜</button>
+        <h2 class="screen-heading">הגדרות</h2>
+        <div class="nav-spacer"></div>
+      </header>
+
+      <div class="settings-list">
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🔊</span>
+            <span>צלילים</span>
+          </div>
+          <button id="setting-sound" type="button" class="toggle-btn is-on">מופעל</button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🎵</span>
+            <span>מוזיקה</span>
+          </div>
+          <button id="setting-music" type="button" class="toggle-btn is-on">מופעל</button>
+        </div>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <span class="setting-icon">🗣️</span>
+            <span>מהירות דיבור</span>
+          </div>
+          <div class="segmented-control">
+            <button id="setting-speed-normal" type="button" class="seg-btn active">רגיל</button>
+            <button id="setting-speed-slow" type="button" class="seg-btn">איטי</button>
+          </div>
+        </div>
+
+        <div class="setting-row setting-danger-row">
+          <div class="setting-label">
+            <span class="setting-icon">🗑️</span>
+            <span>איפוס התקדמות</span>
+          </div>
+          <button id="btn-reset-progress" type="button" class="btn-danger">איפוס</button>
+        </div>
+      </div>
+
+      <div id="reset-confirm-modal" class="confirm-backdrop hidden">
+        <div class="modal-card">
+          <h3 class="modal-title">לאפס הכל?</h3>
+          <p class="modal-desc">כל הכוכבים, המטבעות והמכוניות יתחילו מחדש.</p>
+          <div class="modal-actions">
+            <button id="btn-reset-confirm" type="button" class="btn-danger">כן, אפס</button>
+            <button id="btn-reset-cancel" type="button" class="btn-secondary">ביטול</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
